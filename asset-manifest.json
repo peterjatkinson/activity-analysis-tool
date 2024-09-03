@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/activity-analysis-tool/static/css/main.0232f0bb.css",
+    "main.js": "/activity-analysis-tool/static/js/main.f30cca17.js",
+    "index.html": "/activity-analysis-tool/index.html",
+    "main.0232f0bb.css.map": "/activity-analysis-tool/static/css/main.0232f0bb.css.map",
+    "main.f30cca17.js.map": "/activity-analysis-tool/static/js/main.f30cca17.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.0232f0bb.css",
+    "static/js/main.f30cca17.js"
+  ]
+}
