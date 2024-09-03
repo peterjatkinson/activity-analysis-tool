@@ -129,29 +129,60 @@ const ActivityAnalysisTool = () => {
         return; // Skip to the next iteration
       }
       let categorized = false;
+      let matchedCategory = null;
+      let matchedActivity = null;
+      let maxMatchLength = 0;
+  
       for (const [category, activities] of Object.entries(ACTIVITY_CATEGORIES)) {
-        const matchedActivity = activities.find(activity => 
-          title.toLowerCase().includes(activity.toLowerCase()) ||
-          (activity.toLowerCase() === 'assignment' && title.toLowerCase().includes('assignment'))
-        );
-        if (matchedActivity || 
-           (category === 'Produce' && title.toLowerCase().includes('coursework')) ||
-           (category === 'Practice' && title.toLowerCase().includes('simulation'))) {
-          const normalizedTitle = matchedActivity || title;
-          categoryCounts[category]++;
-          activityCounts[normalizedTitle] = (activityCounts[normalizedTitle] || 0) + 1;
-          categorizedActivities[category][normalizedTitle] = (categorizedActivities[category][normalizedTitle] || 0) + 1;
-          categorized = true;
-          logMessage += `Row ${index + 2}: "${title}" categorized as ${category} (${matchedActivity || 'Custom Rule'})\n`;
-          
-          // Add shared activities to Participate category as well
-          if (SHARED_ACTIVITIES.some(activity => normalizedTitle.toLowerCase().includes(activity.toLowerCase()))) {
-            categoryCounts.Participate++;
-            categorizedActivities.Participate[normalizedTitle] = (categorizedActivities.Participate[normalizedTitle] || 0) + 1;
+        for (const activity of activities) {
+          if (title.toLowerCase() === activity.toLowerCase()) {
+            // Exact match, use this immediately
+            matchedCategory = category;
+            matchedActivity = activity;
+            break;
+          } else if (title.toLowerCase().includes(activity.toLowerCase())) {
+            // Partial match, check if it's the longest match so far
+            if (activity.length > maxMatchLength) {
+              maxMatchLength = activity.length;
+              matchedCategory = category;
+              matchedActivity = activity;
+            }
           }
-          break;
+        }
+        if (matchedCategory && matchedActivity && title.toLowerCase() === matchedActivity.toLowerCase()) {
+          break;  // Stop searching if we found an exact match
         }
       }
+  
+      if (matchedCategory && matchedActivity) {
+        categoryCounts[matchedCategory]++;
+        activityCounts[matchedActivity] = (activityCounts[matchedActivity] || 0) + 1;
+        categorizedActivities[matchedCategory][matchedActivity] = (categorizedActivities[matchedCategory][matchedActivity] || 0) + 1;
+        categorized = true;
+        logMessage += `Row ${index + 2}: "${title}" categorized as ${matchedCategory} (${matchedActivity})\n`;
+        
+        // Add shared activities to Participate category as well
+        if (SHARED_ACTIVITIES.some(activity => matchedActivity.toLowerCase().includes(activity.toLowerCase()))) {
+          categoryCounts.Participate++;
+          categorizedActivities.Participate[matchedActivity] = (categorizedActivities.Participate[matchedActivity] || 0) + 1;
+        }
+      } else if (title.toLowerCase().includes('coursework')) {
+        // Handle 'coursework' case
+        categoryCounts.Produce++;
+        activityCounts[title] = (activityCounts[title] || 0) + 1;
+        categorizedActivities.Produce[title] = (categorizedActivities.Produce[title] || 0) + 1;
+        categorized = true;
+        logMessage += `Row ${index + 2}: "${title}" categorized as Produce (Custom Rule - Coursework)\n`;
+      } else if (title.toLowerCase().includes('simulation')) {
+        // Handle 'simulation' case
+        categoryCounts.Practice++;
+        activityCounts[title] = (activityCounts[title] || 0) + 1;
+        categorizedActivities.Practice[title] = (categorizedActivities.Practice[title] || 0) + 1;
+        categorized = true;
+        logMessage += `Row ${index + 2}: "${title}" categorized as Practice (Custom Rule - Simulation)\n`;
+      }
+      // END OF NEW SECTION
+  
       if (!categorized) {
         categoryCounts.Other++;
         activityCounts[title] = (activityCounts[title] || 0) + 1;
@@ -159,10 +190,11 @@ const ActivityAnalysisTool = () => {
         logMessage += `Row ${index + 2}: "${title}" categorized as Other\n`;
       }
     });
-
+  
     setLog(logMessage);
-
+  
     const totalActivities = activityTitles.length;
+  
 
     // Log category counts before pie chart calculation
     logMessage += `\nBefore pie chart calculation:\n`;
