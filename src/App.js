@@ -313,7 +313,7 @@ const ActivityAnalysisTool = () => {
                 value={videoCount}
                 onChange={(e) => setVideoCount(e.target.value)}
                 placeholder="Number of videos"
-                className="border rounded-l px-3 py-2 w-40"
+                className="border rounded-l px-3 py-2 w-80"
               />
               <button
                 onClick={handleAddVideos}
