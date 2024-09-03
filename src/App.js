@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
 import { ChevronDown, ChevronUp, Upload, BarChart, PlusCircle } from 'lucide-react';
+import html2canvas from 'html2canvas';
+
 
 const COLORS = ['#4C51BF', '#38A169', '#D69E2E', '#E53E3E', '#667EEA'];
 
@@ -92,18 +94,27 @@ const ActivityAnalysisTool = () => {
 
     const headers = rows[0].map(h => h.toLowerCase().trim());
     const activityTitleIndex = headers.findIndex(h => h === 'activity_title');
+    const courseTitleIndex = headers.findIndex(h => h === 'course_title');
     
     if (activityTitleIndex === -1) {
       throw new Error('activity_title column not found');
     }
 
-    return rows.slice(1).map(row => {
+    if (courseTitleIndex === -1) {
+      throw new Error('course_title column not found');
+    }  
+
+    const courseTitle = rows[1][courseTitleIndex]; // Assuming course title is the same in every row
+    const activityTitles = rows.slice(1).map(row => {
       const activity = row[activityTitleIndex];
       return activity ? activity.replace(/^"|"$/g, '').replace(/&/g, 'and').trim() : null;
     }).filter(Boolean);
+  
+    return { courseTitle, activityTitles };
   };
+  
 
-  const analyzeData = (activityTitles) => {
+  const analyzeData = ({ courseTitle, activityTitles }) => {
     const categoryCounts = {
       Present: 0,
       Practice: 0,
@@ -122,10 +133,19 @@ const ActivityAnalysisTool = () => {
     };
 
     let logMessage = '';
+    let learningOutcomesCount = 0;  // Counter for learning outcomes
+    let usefulResourcesCount = 0;   // Counter for useful resources
+  
 
     activityTitles.forEach((title, index) => {
       if (title.toLowerCase().includes('learning outcomes')) {
+        learningOutcomesCount++;  // Increment the counter
         logMessage += `Row ${index + 2}: "${title}" ignored (Learning outcomes)\n`;
+        return; // Skip to the next iteration
+      }
+      if (title.toLowerCase().includes('useful resources')) {
+        usefulResourcesCount++;  // Increment the counter
+        logMessage += `Row ${index + 2}: "${title}" ignored (Useful resources)\n`;
         return; // Skip to the next iteration
       }
       let categorized = false;
@@ -193,14 +213,8 @@ const ActivityAnalysisTool = () => {
   
     setLog(logMessage);
   
-    const totalActivities = activityTitles.length;
+    const totalActivities = activityTitles.length - learningOutcomesCount - usefulResourcesCount;
   
-
-    // Log category counts before pie chart calculation
-    logMessage += `\nBefore pie chart calculation:\n`;
-    logMessage += `Produce count: ${categoryCounts.Produce}\n`;
-    logMessage += `Participate count: ${categoryCounts.Participate}\n`;
-
     // Calculate percentages for pie chart
     const pollCount = categorizedActivities.Practice['Poll'] || 0;
     const stickyNoteCount = categorizedActivities.Produce['Sticky note'] || 0;
@@ -232,7 +246,7 @@ const ActivityAnalysisTool = () => {
 
     setLog(logMessage);
 
-    return { categoryCounts, activityCounts, pieData, categorizedActivities, totalActivities };
+    return { courseTitle, categoryCounts, activityCounts, pieData, categorizedActivities, totalActivities };
   };
 
   const handleAddVideos = () => {
@@ -282,6 +296,24 @@ const ActivityAnalysisTool = () => {
     setOpenAccordions(prev => ({...prev, [category]: !prev[category]}));
   };
 
+  const downloadChart = async () => {
+    const chartElement = document.querySelector('.recharts-responsive-container');
+    if (!chartElement) return;
+  
+    const canvas = await html2canvas(chartElement);
+    const dataURL = canvas.toDataURL('image/png');
+  
+    const link = document.createElement('a');
+    link.href = dataURL;
+    
+    // Use the module title as the filename, sanitized to remove illegal file characters
+    const sanitizedTitle = results.courseTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    link.download = `${sanitizedTitle}_activity_analysis_chart.png`;
+    
+    link.click();
+  };
+    
+
   const renderAccordion = (category, activities) => {
     const isOpen = openAccordions[category];
     const count = Object.values(activities).reduce((sum, count) => sum + count, 0);
@@ -313,10 +345,23 @@ const ActivityAnalysisTool = () => {
     return (
       <div className="mt-8 bg-white p-6 rounded-lg shadow-lg">
         <h2 className="text-3xl font-bold mb-6 text-indigo-700">Analysis Results</h2>
-        <p className="mb-6 text-xl font-semibold text-gray-700">Total number of activities: <span className="text-indigo-600">{results.totalActivities}</span></p>
+
+        <p className="text-2xl font-semibold mb-4 text-gray-700">
+          Module Title: <span className="text-indigo-600">{results.courseTitle}</span>
+        </p>
+
+        <p className="mb-6 text-xl font-semibold text-gray-700">
+          Total number of activities: <span className="text-indigo-600">{results.totalActivities}</span>
+          <span 
+            className="tooltip-container ml-2 text-gray-500 cursor-pointer">
+            ❓
+            <span class="tooltip-text">This excludes instances of the 'Learning outcomes' box and the 'Useful resources' box.</span>
+          </span>
+        </p>
+
+        
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 lg:order-2">
-            <h3 className="text-2xl font-semibold mb-4 text-indigo-600">Pie Chart</h3>
             <ResponsiveContainer width="100%" height={400}>
               <PieChart>
                 <Pie
@@ -336,15 +381,31 @@ const ActivityAnalysisTool = () => {
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
+
+            <button
+              onClick={downloadChart}
+              className="bg-indigo-600 text-white px-4 py-2 mt-4 rounded hover:bg-indigo-700 transition-colors duration-200">
+              Download Chart
+            </button>
+
           </div>
           <div className="lg:col-span-1 lg:order-1">
-            <h4 className="text-2xl font-semibold mt-8 mb-4 text-indigo-600">Activity Breakdown</h4>
+            <h4 className="text-2xl font-semibold mt-8 mb-4 text-indigo-600">Activity Breakdown
+              <span className="tooltip-container ml-2 text-gray-500 cursor-pointer">
+                ❓
+                <span className="tooltip-text">
+                  Some activity types (Whiteboard, Sticky notes, Poll, and Image tile) are included in both the Participation category and one other category – in these cases, they are half-weighted in Participation and half-weighted in the other category so that they're not over-represented in the pie chart. But note that this is why if you add up the number stated for each category below, it'll be more than the total number listed above.<br />
+                  You'll need  to add the number of normal Vimeo videos manually as these don't appear in the exercise reports.<br />
+                  For readings, note that the exercise report counts only each reading box, not every reading within each box.
+                </span>
+              </span>
+            </h4>
             <div className="mb-4 flex items-center">
               <input
                 type="number"
                 value={videoCount}
                 onChange={(e) => setVideoCount(e.target.value)}
-                placeholder="Number of videos"
+                placeholder="Add number of videos here"
                 className="border rounded-l px-3 py-2 w-80"
               />
               <button
@@ -359,10 +420,12 @@ const ActivityAnalysisTool = () => {
             )}
           </div>
         </div>
+        {/* HIDDEN FOR NOW AS NOT REALLY NEEDED EXCEPT AS A DEBUGGING TOOL
         <div className="mt-8">
           <h3 className="text-2xl font-semibold mb-4 text-indigo-600">Analysis Log</h3>
           <pre className="bg-gray-100 p-4 rounded-lg overflow-auto max-h-96 text-sm shadow-inner">{log}</pre>
         </div>
+        */}
       </div>
     );
   };

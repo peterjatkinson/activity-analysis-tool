@@ -36,3 +36,35 @@
     transform: rotate(360deg);
   }
 }
+
+.tooltip-container {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.tooltip-text {
+  visibility: hidden;
+  width: 520px; /* Width of the tooltip container */
+  background-color: rgb(244, 244, 244); /* Light grey background color of the tooltip container */
+  color: #000000; /* Dark blue text color inside the tooltip */
+  text-align: left; /* Left-aligns the text inside the tooltip */
+  border-radius: 6px; /* Rounded corners */
+  border-style: solid;
+  border-color: #282c34; /* Dark border color */
+  border-width: 1px; /* Thin border */
+  padding: 5px;
+  position: absolute;
+  z-index: 1;
+  top: 125%; /* Positions the tooltip below the question mark */
+  left: 50%;
+  margin-left: -260px; /* Centers the tooltip horizontally */
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 12px; /* Smaller text size inside the tooltip */
+}
+
+.tooltip-container:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
