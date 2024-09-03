@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/activity-analysis-tool/static/css/main.a27f4bc8.css",
-    "main.js": "/activity-analysis-tool/static/js/main.e161a89c.js",
+    "main.js": "/activity-analysis-tool/static/js/main.3ddad98b.js",
     "index.html": "/activity-analysis-tool/index.html",
     "main.a27f4bc8.css.map": "/activity-analysis-tool/static/css/main.a27f4bc8.css.map",
-    "main.e161a89c.js.map": "/activity-analysis-tool/static/js/main.e161a89c.js.map"
+    "main.3ddad98b.js.map": "/activity-analysis-tool/static/js/main.3ddad98b.js.map"
   },
   "entrypoints": [
     "static/css/main.a27f4bc8.css",
-    "static/js/main.e161a89c.js"
+    "static/js/main.3ddad98b.js"
   ]
 }
